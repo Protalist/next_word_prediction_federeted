@@ -4,5 +4,5 @@ __pycache__
 .vscode
 dataset/en_US
 logsnextword1
-embended
+embended/glove.6B.50d.txt
 model
