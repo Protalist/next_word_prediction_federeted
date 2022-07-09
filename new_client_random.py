@@ -53,24 +53,7 @@ def client(num_clients, id_client):
             self.x_val_m, self.y_val_m = X_f[split_idx:], y_f[split_idx:]
 
 
-    embeddings_index = dict()
-    f = open(r"C:\Users\Giuli\Documents\tesi\federeted\embended\glove.6B.50d.txt", encoding="utf8")
-
-    for line in f:
-        values = line.split()
-        word = values[0]
-        coefs = np.asarray(values[1:], dtype='float32')
-        embeddings_index[word] = coefs
-
-    f.close()
-    print('Loaded %s word vectors.' % len(embeddings_index))
-
-    embedding_matrix = np.zeros((vocab_size, emending_length))
-
-    for i, word in enumerate(list(vocab_dict)):
-        embedding_vector = embeddings_index.get(word)
-        if embedding_vector is not None:
-            embedding_matrix[i] = embedding_vector
+    embedding_matrix = pickle.load(open(r'embended\embended.pk1', 'rb'))
 
     top_k = tf.keras.metrics.SparseTopKCategoricalAccuracy(
         k=3, name='top3', dtype=None

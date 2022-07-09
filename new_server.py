@@ -63,7 +63,7 @@ def server(num_client):
                 W_g_i = self.aggregate([x for x in results if x[2] != r[2]])
                 _, dict_w_i = self.eval_fn_p(W_i)
                 _, dict_g_i = self.eval_fn_p(W_g_i)
-                if dict_w_i["val_top_3"]-dict_g_i["val_top_3"] >= -0.02 *1/((i/2)):
+                if dict_w_i["val_top_3"]-dict_g_i["val_top_3"] >= -0.02 *1/((int(rnd)/10)):
                     ret.append(r)
                 else:
                     print(r[2], "is malicius")
@@ -147,26 +147,7 @@ def server(num_client):
 
     vocab_dict = pickle.load(open(r'globalVariable\token.pk1', 'rb'))
     vocab_size = len(vocab_dict)
-
-
-    embeddings_index = dict()
-    f = open(r"C:\Users\Giuli\Documents\tesi\federeted\embended\glove.6B.50d.txt", encoding="utf8")
-
-    for line in f:
-        values = line.split()
-        word = values[0]
-        coefs = np.asarray(values[1:], dtype='float32')
-        embeddings_index[word] = coefs
-
-    f.close()
-    print('Loaded %s word vectors.' % len(embeddings_index))
-
-    embedding_matrix = np.zeros((vocab_size, emending_length))
-
-    for i, word in enumerate(list(vocab_dict)):
-        embedding_vector = embeddings_index.get(word)
-        if embedding_vector is not None:
-            embedding_matrix[i] = embedding_vector
+    embedding_matrix = pickle.load(open(r'embended\embended.pk1', 'rb'))
 
     top_k = tf.keras.metrics.SparseTopKCategoricalAccuracy(
         k=3, name='top3', dtype=None
@@ -193,7 +174,7 @@ def server(num_client):
             eval_fn_p=get_eval_fn(model)
     )
 
-    hist=fl.server.start_server(server_address ="localhost:3031",config={"num_rounds": 50}, strategy=strategy)
+    hist=fl.server.start_server(server_address ="localhost:3031",config={"num_rounds": 30}, strategy=strategy)
 
     pickle.dump(hist, open(r'model\result_poisoned.pk1', 'wb'))
 
