@@ -1,8 +1,8 @@
 from re import X
 import sys
 
-from ray import client
 from globalVariable.global_variable import *
+from globalVariable.model import next_word_model
 
 def client(num_clients, id_client):
     NUM_CLIENTS=num_clients
@@ -52,22 +52,8 @@ def client(num_clients, id_client):
             self.x_train_m, self.y_train_m = X_f[:split_idx], y_f[:split_idx]
             self.x_val_m, self.y_val_m = X_f[split_idx:], y_f[split_idx:]
 
+    model = next_word_model(vocab_size,lengt_sequence)
 
-    embedding_matrix = pickle.load(open(r'embended\embended.pk1', 'rb'))
-
-    top_k = tf.keras.metrics.SparseTopKCategoricalAccuracy(
-        k=3, name='top3', dtype=None
-    )
-    model = Sequential()
-    model.add(Embedding(vocab_size, emending_length, input_length=lengt_sequence,weights=[embedding_matrix],trainable=True))
-    model.add(LSTM(50, return_sequences=True))
-    model.add(Attention(units=25))
-    model.add(Dropout(0.3))
-    model.add(Dense(16, activation='relu'))
-    model.add(Dense(vocab_size, activation='softmax'))
-
-    optimizer=Adam(learning_rate=0.001) #tf.keras.optimizers.RMSprop()#
-    model.compile(loss='sparse_categorical_crossentropy', optimizer=optimizer, metrics=['accuracy',top_k])
 
     partition_size = math.floor(len(sequences) / (NUM_CLIENTS+1))
     idx_from, idx_to = int(cid) * partition_size, (int(cid) + 1) * partition_size
@@ -90,16 +76,12 @@ def client(num_clients, id_client):
      
     print("Number of trining element",len(X_f))
 
-    # Use 10% of the client's training data for validation
     split_idx = math.floor(len(X_f) * 0.9)
     x_train, y_train = X_f[:split_idx], y_f[:split_idx]
     x_val, y_val = X_f[split_idx:], y_f[split_idx:]
 
 
-    param=model.get_weights()
-   # NextWordPredictionClient( model, x_train, y_train, x_val, y_val).fit(param,None)
     fl.client.start_numpy_client("localhost:3031", client=NextWordPredictionClient( model, x_train, y_train, x_val, y_val))
-    #text = input("Enter your line: ")
 
 if __name__ == "__main__":
     print (sys.argv)

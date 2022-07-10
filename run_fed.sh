@@ -13,5 +13,9 @@ do
 
     command="${command}; nt --title ${name} python3   new_client_random.py ${X} ${Y} "
 done
-#md.exe /c wt.exe -w 0 $command
-cmd.exe /c wt.exe -w 0 nt --title server python3 new_server.py $X $command
+if [ "$2" = "" ]; then
+    cmd.exe /c wt.exe -w 0 nt --title server python3 new_server.py $X $command
+else
+    cmd.exe /c wt.exe -w 0 $command
+fi
+#

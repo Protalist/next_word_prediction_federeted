@@ -1,4 +1,5 @@
 from globalVariable.global_variable import *
+from globalVariable.model import *
 #os.environ["TF_CPP_MIN_LOG_LEVEL"] = "1"
 import sys
 
@@ -47,7 +48,8 @@ def server(num_client):
                 (fl.common.parameters_to_weights(fit_res.parameters), fit_res.num_examples,fit_res.metrics['cid'])
                 for _, fit_res in results
             ]
-            weights_results = self.check_poison(weights_results,rnd)
+            weights_results = self.accuracy_checking(weights_results,rnd)
+            self.Weight_update_statistics(weights_results,rnd)
             self.current_weigth=self.aggregate(weights_results)
             parameters_aggregated = fl.common.weights_to_parameters(self.current_weigth)
 
@@ -55,7 +57,7 @@ def server(num_client):
             metrics_aggregated = {}
             return parameters_aggregated, metrics_aggregated
 
-        def check_poison(self,results,rnd):
+        def accuracy_checking(self,results,rnd):
             ret = []
             for r in results:
                 print(f"check client {r[2]}")
@@ -63,10 +65,14 @@ def server(num_client):
                 W_g_i = self.aggregate([x for x in results if x[2] != r[2]])
                 _, dict_w_i = self.eval_fn_p(W_i)
                 _, dict_g_i = self.eval_fn_p(W_g_i)
-                if dict_w_i["val_top_3"]-dict_g_i["val_top_3"] >= -0.02 *1/((int(rnd)/10)):
+                if dict_w_i["val_top_3"]-dict_g_i["val_top_3"] >= -0.02:
                     ret.append(r)
                 else:
                     print(r[2], "is malicius")
+                    round = pickle.load(open(r'globalVariable\accuracy_checking.pk1', 'rb'))
+                    round[str(rnd)+"-"+str(r[2])]={"agent": r[2],"distance": dict_w_i["val_top_3"]-dict_g_i["val_top_3"] }
+                    pickle.dump(round, open(r'globalVariable\accuracy_checking.pk1', 'wb'))
+
             return ret
 
         def aggregate(self,results) :
@@ -84,8 +90,6 @@ def server(num_client):
                 reduce(np.add, layer_updates) / num_examples_total
                 for layer_updates in zip(*weighted_weights)
             ]
-            print("current weigth shape =",np.array(self.current_weigth).shape)
-            print("weigth prime shape =",np.array(weights_prime).shape)
             return np.array(self.current_weigth)+np.array(weights_prime)
 
         def aggregate_evaluate(
@@ -112,6 +116,49 @@ def server(num_client):
 
             # Call aggregate_evaluate from base class (FedAvg)
             return (loss, {"accuracy":accuracy_aggregated,"top_k":top_k_grragated})
+
+        def Weight_update_statistics(self, results, rnd: int):
+          if len(results)<=1:
+            return
+          m = None
+          for t in results:
+            if t[2] == "7":
+              m=t
+          if not m:
+            return 
+          l_result = results.copy()
+          for i,t in enumerate(l_result):
+            if t[2]==m[2]:
+                l_result.pop(i)
+          R_max =float('-inf')
+          R_min =float('inf')
+
+          R_max_m = float('-inf')
+          R_min_m =float('inf')
+
+          for r in l_result:
+            d = distance_weigths(m[0],r[0])
+            if R_max_m < d:
+              R_max_m = d
+            if R_min_m > d :
+              R_min_m = d
+
+          for r in l_result:
+            l_result.pop(0)
+            for r2 in l_result:
+              d = distance_weigths(r2[0],r[0])
+              if R_max < d:
+                R_max = d
+              if R_min > d:
+                R_min = d
+          r=max(abs(R_max_m-R_min),abs(R_min_m-R_max))
+          if(r>18):
+            print(f"agent malicius 7 detected")
+            round = pickle.load(open(r'globalVariable\Weight_update_statistics.pk1', 'rb'))
+            round[str(rnd)+"-"+str(m[2])]={"agent": m[2],"distance":d}
+            pickle.dump(round, open(r'globalVariable\Weight_update_statistics.pk1', 'wb'))
+          return
+
 
     def get_eval_fn(model):
         """Return an evaluation function for server-side evaluation."""
@@ -147,21 +194,10 @@ def server(num_client):
 
     vocab_dict = pickle.load(open(r'globalVariable\token.pk1', 'rb'))
     vocab_size = len(vocab_dict)
-    embedding_matrix = pickle.load(open(r'embended\embended.pk1', 'rb'))
-
-    top_k = tf.keras.metrics.SparseTopKCategoricalAccuracy(
-        k=3, name='top3', dtype=None
-    )
-    model = Sequential()
-    model.add(Embedding(vocab_size, emending_length, input_length=lengt_sequence,weights=[embedding_matrix],trainable=True))
-    model.add(LSTM(50, return_sequences=True))
-    model.add(Attention(units=25))
-    model.add(Dropout(0.3))
-    model.add(Dense(16, activation='relu'))
-    model.add(Dense(vocab_size, activation='softmax'))
-
-    optimizer=Adam(learning_rate=0.001) #tf.keras.optimizers.RMSprop()#
-    model.compile(loss='sparse_categorical_crossentropy', optimizer=optimizer, metrics=['accuracy',top_k ])
+    
+    model = next_word_model(vocab_size,lengt_sequence)
+    pickle.dump({}, open(r'globalVariable\Weight_update_statistics.pk1', 'wb'))
+    pickle.dump({}, open(r'globalVariable\accuracy_checking.pk1', 'wb'))
 
     strategy=AggregateCustomMetricStrategy(
             fraction_fit=0.4,  # Sample 10% of available clients for training
