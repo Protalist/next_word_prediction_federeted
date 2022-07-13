@@ -26,7 +26,6 @@ def distance_weigths(weigth1, weigth2):
     return dist
   dist=[]
   for i,_ in enumerate(weigth1):
-    print(i)
     d=euclideanDistance(weigth1[i], weigth2[i])
     dist.append(d)
   return tf.reduce_sum(dist)/len(dist)
