@@ -7,6 +7,7 @@ from globalVariable.model import next_word_model
 def client(num_clients, id_client):
     NUM_CLIENTS=num_clients
     cid=id_client
+    k=10
 
     vocab_dict =  pickle.load(open(r'globalVariable\token.pk1', 'rb'))
     sequences = pickle.load(open(r'globalVariable\sequences.pk1', 'rb'))
@@ -30,6 +31,9 @@ def client(num_clients, id_client):
             self.shuffle()
             self.model.fit(self.x_train_m,self.y_train_m, epochs=3, batch_size=64)
             delta=np.array(self.model.get_weights())-np.array(parameters)
+
+            if cid=="7":
+                delta=delta*(1/10)
             return delta, len(self.x_train_m), {"cid":cid}
 
         def evaluate(self, parameters, config):
