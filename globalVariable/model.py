@@ -21,12 +21,11 @@ def next_word_model(vocab_size,lengt_sequence,weigth= None):
 
 
 def distance_weigths_scalar(weigth1, weigth2):
-  # def euclideanDistance(x, y):
-  #   dist = tf.sqrt(tf.reduce_sum(tf.square(x - y)))
-  #   return dist
-  # dist=[]
-  # for i,_ in enumerate(weigth1):
-  #   d=euclideanDistance(weigth1[i], weigth2[i])
-  #   dist.append(d)
-  # return tf.reduce_sum(dist)/len(dist)
-  return  np.linalg.norm(np.array(weigth1)-np.array(weigth2))
+  def euclideanDistance(x, y):
+    dist = tf.sqrt(tf.reduce_sum(tf.square(x - y)))
+    return dist
+  dist=[]
+  for i,_ in enumerate(weigth1):
+    d=euclideanDistance(weigth1[i], weigth2[i])
+    dist.append(d)
+  return tf.reduce_sum(dist)/len(dist)
