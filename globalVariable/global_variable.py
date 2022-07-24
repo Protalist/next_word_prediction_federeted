@@ -1,4 +1,5 @@
 import os
+import statistics
 os.add_dll_directory(r"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.6\bin")
 
 import tensorflow as tf
@@ -36,7 +37,6 @@ lengt_sequence=2
 
 acuracy_checking_path = r"modelPoisonDetect\accuracy_checking.pk1"
 weigth_update_statistics_path = r"modelPoisonDetect\Weight_update_statistics.pk1"
-
 
 #@title Example form fields
 #@markdown Forms support many types of fields.
@@ -104,3 +104,6 @@ def convert_int_text(prev,next,vocab_inv):
     r = r + vocab_inv[i] + " "
   r = r + vocab_inv[next]
   return r
+
+def distance_weigths(x,y):
+    return np.array(x)-np.array(y)

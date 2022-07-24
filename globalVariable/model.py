@@ -1,7 +1,7 @@
 from globalVariable.global_variable import *
 
 
-def next_word_model(vocab_size,lengt_sequence,weigth= None):
+def next_word_model(vocab_size,lengt_sequence,weigth= None,compile=True):
   embedding_matrix = pickle.load(open(r'embended\embended.pk1', 'rb'))
 
   top_k = tf.keras.metrics.SparseTopKCategoricalAccuracy(
@@ -15,8 +15,11 @@ def next_word_model(vocab_size,lengt_sequence,weigth= None):
   model.add(Dense(16, activation='relu'))
   model.add(Dense(vocab_size, activation='softmax'))
 
-  optimizer=Adam(learning_rate=0.001) #tf.keras.optimizers.RMSprop()#
-  model.compile(loss='sparse_categorical_crossentropy', optimizer=optimizer, metrics=['accuracy',top_k])
+  if weigth is not None:
+    model.set_weights(weigth)
+  if compile:
+    optimizer=Adam(learning_rate=0.001) #tf.keras.optimizers.RMSprop()#
+    model.compile(loss='sparse_categorical_crossentropy', optimizer=optimizer, metrics=['accuracy',top_k])
   return model
 
 
