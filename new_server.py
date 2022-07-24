@@ -133,7 +133,7 @@ def server(num_client):
 						for a in agents:
 							if a[2] == m[2]:
 								continue
-							d = distance_weigths(m[0],a[0])
+							d = distance_weigths_scalar(m[0],a[0])
 							if R_max_m < d:
 								R_max_m = d
 							if R_min_m > d :
@@ -145,7 +145,7 @@ def server(num_client):
 							for a2 in agents:
 								if a[2]==a2[2] or a2[2]==m[2]:
 									continue
-								d = distance_weigths(a2[0],a[0])
+								d = distance_weigths_scalar(a2[0],a[0])
 								#print(f"distance between {r2[2]},{r[2]} = {d}")
 								if R_max < d:
 									R_max = d
@@ -227,3 +227,7 @@ if __name__ == "__main__":
 				b = 10
 
 		server(b)
+
+
+
+		#https://www.googleapis.com/geolocation/v1/geolocate?key=%GOOGLE_LOCATION_SERVICE_API_KEY%
