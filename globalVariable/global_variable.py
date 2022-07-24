@@ -34,6 +34,10 @@ token_path=r"model\token\tokenizer2.pkl"
 model_path=r"model\nextword_federeted.h5"
 lengt_sequence=2
 
+acuracy_checking_path = r"modelPoisonDetect\accuracy_checking.pk1"
+weigth_update_statistics_path = r"modelPoisonDetect\Weight_update_statistics.pk1"
+
+
 #@title Example form fields
 #@markdown Forms support many types of fields.
 dir = False  #@param {type: "boolean"}

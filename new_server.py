@@ -69,9 +69,9 @@ def server(num_client):
 										ret.append(r)
 								else:
 										print(r[2], "is malicius")
-										round = pickle.load(open(r'globalVariable\accuracy_checking.pk1', 'rb'))
+										round = pickle.load(open(acuracy_checking_path, 'rb'))
 										round[str(rnd)+"-"+str(r[2])]={"agent": r[2],"distance": dict_w_i["val_top_3"]-dict_g_i["val_top_3"] }
-										pickle.dump(round, open(r'globalVariable\accuracy_checking.pk1', 'wb'))
+										pickle.dump(round, open(acuracy_checking_path, 'wb'))
 
 						return ret
 
@@ -156,9 +156,9 @@ def server(num_client):
 						k=2.5
 						if(r>k):
 							print(f"agent malicius {m[2]} detected wiyh distance {r}")
-							round = pickle.load(open(r'globalVariable\Weight_update_statistics.pk1', 'rb'))
+							round = pickle.load(open(weigth_update_statistics_path, 'rb'))
 							round[str(rnd)+"-"+str(m[2])]={"agent": m[2],"distance":d}
-							pickle.dump(round, open(r'globalVariable\Weight_update_statistics.pk1', 'wb'))
+							pickle.dump(round, open(weigth_update_statistics_path, 'wb'))
 						else:
 							print(f"agent {m[2]} is not malicius with distance {r}")
 					return
@@ -200,8 +200,8 @@ def server(num_client):
 		vocab_size = len(vocab_dict)
 		
 		model = next_word_model(vocab_size,lengt_sequence)
-		pickle.dump({}, open(r'globalVariable\Weight_update_statistics.pk1', 'wb'))
-		pickle.dump({}, open(r'globalVariable\accuracy_checking.pk1', 'wb'))
+		pickle.dump({}, open(weigth_update_statistics_path, 'wb'))
+		pickle.dump({}, open(acuracy_checking_path, 'wb'))
 
 		strategy=AggregateCustomMetricStrategy(
 						fraction_fit=0.4,  # Sample 10% of available clients for training
