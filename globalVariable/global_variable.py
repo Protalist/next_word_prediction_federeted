@@ -13,7 +13,7 @@ from tensorflow.keras import backend as K
 from tensorflow.keras.models import Sequential, load_model
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.optimizers import Adam
-
+tf.compat.v1.enable_eager_execution()
 
 
 

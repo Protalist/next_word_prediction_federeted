@@ -19,7 +19,7 @@ def next_word_model(vocab_size,lengt_sequence,weigth= None,compile=True):
     model.set_weights(weigth)
   if compile:
     optimizer=Adam(learning_rate=0.001) #tf.keras.optimizers.RMSprop()#
-    model.compile(loss='sparse_categorical_crossentropy', optimizer=optimizer, metrics=['accuracy',top_k])
+    model.compile(loss=tf.keras.losses.sparse_categorical_crossentropy, optimizer=optimizer, metrics=['accuracy',top_k])
   return model
 
 
@@ -32,3 +32,32 @@ def distance_weigths_scalar(weigth1, weigth2):
     d=euclideanDistance(weigth1[i], weigth2[i])
     dist.append(d)
   return tf.reduce_sum(dist)/len(dist)
+
+@tf.function
+def train_step(dataset, model,loss=None,e1=0):
+  with tf.GradientTape() as tape:
+    predictions = model(dataset[0], training= True)
+    if loss is None:
+      loss = model.loss(dataset[1], predictions)
+    else: 
+      loss = loss(dataset[1], predictions)+e1
+    gradients = tape.gradient(loss, model.trainable_variables)
+
+  model.optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+  return loss
+
+def train(dataset, epochs, batch_size, model,loss=None):
+  l,e1=loss(model.get_weights())
+  for epoch in range(epochs):
+    print(epoch)
+    loss_list = []
+    i=0
+    data = dataset[0]
+    label = dataset[1]
+    while i < len(data):
+      t = train_step([data[i:i+batch_size],label[i:i+batch_size]], model,l,e1)
+      loss_list.append(t)
+      i=i+batch_size
+
+    loss = sum(loss_list) / len(loss_list)
+    print (f'Epoch {epoch+1}, loss={loss}')

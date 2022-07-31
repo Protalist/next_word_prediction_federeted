@@ -3,7 +3,7 @@ from re import X
 import sys
 
 from globalVariable.global_variable import *
-from globalVariable.model import next_word_model
+from globalVariable.model import *
 
 def client(num_clients, id_client):
     NUM_CLIENTS=num_clients
@@ -19,7 +19,7 @@ def client(num_clients, id_client):
             if(cid=="7"):
                 top_k = tf.keras.metrics.SparseTopKCategoricalAccuracy(k=3, name='top3', dtype=None)
                 optimizer=Adam(learning_rate=0.001) #tf.keras.optimizers.RMSprop()#
-                model.compile(loss='sparse_categorical_crossentropy', optimizer=optimizer, metrics=['accuracy',top_k])
+                model.compile(loss=tf.keras.losses.sparse_categorical_crossentropy, optimizer=optimizer, metrics=['accuracy',top_k])
             self.model = model
             self.weigth_t_pre = None
             self.weigth = None
@@ -36,7 +36,12 @@ def client(num_clients, id_client):
             self.weigth_t_pre = parameters
             self.model.set_weights(parameters)
             self.shuffle()
-            self.model.fit(self.x_train_m,self.y_train_m, epochs=3, batch_size=64)
+            if cid=="7": 
+                dataset=[self.x_train_m,self.y_train_m]
+                train(dataset, 3, 64, self.model, self.malicius_loss())
+            else:
+                self.model.fit(self.x_train_m,self.y_train_m, epochs=3, batch_size=64)
+            
             delta=np.array(self.model.get_weights())-np.array(parameters)
 
             if cid=="7":
@@ -64,14 +69,16 @@ def client(num_clients, id_client):
             self.x_val_m, self.y_val_m = X_f[split_idx:], y_f[split_idx:]
 
         def malicius_loss(self):
-            def loss(y_true, y_pred):
-                delta_m = np.array(self.model.get_weights()) - np.array(self.weigth_t_pre )
-                delta = np.array(self.model.get_weights()) - delta_m
-                e3 = np.linalg.norm(delta_m-delta)
-                c = tf.keras.losses.SparseCategoricalCrossentropy()
-                e2 = c(y_true, y_pred).numpy()
-                e1 = self.evaluate(parameters=self.model.get_weights(), config=None)[0]
-                return e1+e2+e3
+            def loss(w):
+                e1 = self.evaluate(parameters=w, config=None)[0]
+                def loss2(y_true, y_pred):
+                    delta_m = np.array(w) - np.array(self.weigth_t_pre )
+                    delta = np.array(w) - delta_m
+                    e3 = distance_weigths_scalar(delta_m,delta)
+                    c = tf.keras.losses.SparseCategoricalCrossentropy()
+                    e2 = c(y_true, y_pred)
+                    return e2+e3
+                return loss2, e1
             return loss
 
 
@@ -106,7 +113,8 @@ def client(num_clients, id_client):
     x_train, y_train = X_f[:split_idx], y_f[:split_idx]
     x_val, y_val = X_f[split_idx:], y_f[split_idx:]
 
-
+    client=NextWordPredictionClient( model, x_train, y_train, x_val, y_val)
+   # client.fit(model.get_weights(), None)
     fl.client.start_numpy_client("localhost:3031", client=NextWordPredictionClient( model, x_train, y_train, x_val, y_val))
 
 if __name__ == "__main__":
