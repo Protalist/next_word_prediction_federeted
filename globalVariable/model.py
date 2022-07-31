@@ -25,13 +25,25 @@ def next_word_model(vocab_size,lengt_sequence,weigth= None,compile=True):
 
 def distance_weigths_scalar(weigth1, weigth2):
   def euclideanDistance(x, y):
-    dist = tf.sqrt(tf.reduce_sum(tf.square(x - y)))
+    dist = tf.sqrt(tf.reduce_sum(tf.pow(x - y)))
     return dist
   dist=[]
   for i,_ in enumerate(weigth1):
     d=euclideanDistance(weigth1[i], weigth2[i])
     dist.append(d)
   return tf.reduce_sum(dist)/len(dist)
+
+def distance_lp_norm(weigth1, weigth2):
+  distance = np.array(weigth1)-np.array(weigth2)
+  d=[]
+  for layer in distance:
+    for neuron in layer:
+      if not (type(neuron) == np.ndarray):
+        d.append(pow(neuron,2))
+        break
+      for weight in neuron:
+        d.append(pow(weight,2))
+  return np.sqrt(np.sum(d))
 
 @tf.function
 def train_step(dataset, model,loss=None,e1=0):

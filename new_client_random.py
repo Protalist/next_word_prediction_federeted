@@ -74,7 +74,7 @@ def client(num_clients, id_client):
                 def loss2(y_true, y_pred):
                     delta_m = np.array(w) - np.array(self.weigth_t_pre )
                     delta = np.array(w) - delta_m
-                    e3 = distance_weigths_scalar(delta_m,delta)
+                    e3 = distance_lp_norm(delta_m,delta)
                     c = tf.keras.losses.SparseCategoricalCrossentropy()
                     e2 = c(y_true, y_pred)
                     return e2+e3
