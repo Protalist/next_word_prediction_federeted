@@ -6,7 +6,7 @@ import sys
 
 def server(num_client):
 		NUM_CLIENTS=num_client
-		
+		KRUM=True
 
 
 		class AggregateCustomMetricStrategy(fl.server.strategy.FedAvg):
@@ -21,11 +21,11 @@ def server(num_client):
 						eval_fn_p
 				):
 						super(AggregateCustomMetricStrategy,self).__init__(
-								fraction_fit=0.4,  # Sample 10% of available clients for training
-								fraction_eval=0.2,  # Sample 5% of available clients for evaluation
-								min_fit_clients=3,  # Never sample less than 10 clients for training
-								min_eval_clients=2,  # Never sample less than 5 clients for evaluation
-								min_available_clients=int(NUM_CLIENTS * 0.75),  # Wait until at least 75 clients are available
+								fraction_fit=fraction_fit,  # Sample 10% of available clients for training
+								fraction_eval=fraction_eval,  # Sample 5% of available clients for evaluation
+								min_fit_clients=min_fit_clients,  # Never sample less than 10 clients for training
+								min_eval_clients=min_eval_clients,  # Never sample less than 5 clients for evaluation
+								min_available_clients=min_available_clients,  # Wait until at least 75 clients are available
 								initial_parameters=initial_parameters
 								)
 						self.current_weigth = fl.common.parameters_to_weights(self.initial_parameters)
@@ -50,13 +50,31 @@ def server(num_client):
 						]            
 						self.Weight_update_statistics(weights_results,rnd)
 						weights_results = self.accuracy_checking(weights_results,rnd)
-						self.current_weigth=self.aggregate(weights_results)
+						if KRUM:
+								weights_results = self.krum(weights_results,rnd)
+								self.current_weigth=self.aggregate(weights_results)
+						else:
+							self.current_weigth=self.aggregate(weights_results)
 						parameters_aggregated = fl.common.weights_to_parameters(self.current_weigth)
 
 						# Aggregate custom metrics if aggregation fn was provided
 						metrics_aggregated = {}
 						return parameters_aggregated, metrics_aggregated
 
+				def krum(self, result, rnd):
+						score = {}
+						for r in result:
+							distances=[]
+							for d in result:
+								if d[2] == r[2]:
+									continue
+								d = distance_lp_norm(d[0],r[0])
+								distances.append(d)
+							distances.sort()
+							score[r[2]] = distances[2:]
+						
+						delta_krum = min(score, key=score.get)
+						return [item for item in result if item[2] == delta_krum]
 				def accuracy_checking(self,results,rnd):
 						ret = []
 						for r in results:
@@ -133,7 +151,7 @@ def server(num_client):
 						for a in agents:
 							if a[2] == m[2]:
 								continue
-							d = distance_weigths_scalar(m[0],a[0])
+							d = distance_lp_norm(m[0],a[0])
 							if R_max_m < d:
 								R_max_m = d
 							if R_min_m > d :
@@ -145,7 +163,7 @@ def server(num_client):
 							for a2 in agents:
 								if a[2]==a2[2] or a2[2]==m[2]:
 									continue
-								d = distance_weigths_scalar(a2[0],a[0])
+								d = distance_lp_norm(a2[0],a[0])
 								#print(f"distance between {r2[2]},{r[2]} = {d}")
 								if R_max < d:
 									R_max = d
@@ -204,9 +222,9 @@ def server(num_client):
 		pickle.dump({}, open(acuracy_checking_path, 'wb'))
 
 		strategy=AggregateCustomMetricStrategy(
-						fraction_fit=0.4,  # Sample 10% of available clients for training
+						fraction_fit=0.6,  # Sample 10% of available clients for training
 						fraction_eval=0.2,  # Sample 5% of available clients for evaluation
-						min_fit_clients=3,  # Never sample less than 10 clients for training
+						min_fit_clients=5,  # Never sample less than 10 clients for training
 						min_eval_clients=2,  # Never sample less than 5 clients for evaluation
 						min_available_clients=int(NUM_CLIENTS * 0.75),  # Wait until at least 75 clients are available
 						initial_parameters=fl.common.weights_to_parameters(model.get_weights()),
