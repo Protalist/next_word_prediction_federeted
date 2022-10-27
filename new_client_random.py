@@ -5,7 +5,7 @@ import sys
 from globalVariable.global_variable import *
 from globalVariable.model import *
 
-def client(num_clients, id_client):
+def client(num_clients, id_client, malicius):
     NUM_CLIENTS=num_clients
     cid=id_client
     k=10
@@ -16,7 +16,7 @@ def client(num_clients, id_client):
 
     class NextWordPredictionClient(fl.client.NumPyClient):
         def __init__(self, model, x_train, y_train, x_val, y_val) -> None:
-            if(cid=="7"):
+            if(cid==malicius):
                 top_k = tf.keras.metrics.SparseTopKCategoricalAccuracy(k=3, name='top3', dtype=None)
                 optimizer=Adam(learning_rate=0.001) #tf.keras.optimizers.RMSprop()#
                 model.compile(loss=tf.keras.losses.sparse_categorical_crossentropy, optimizer=optimizer, metrics=['accuracy',top_k])
@@ -36,7 +36,7 @@ def client(num_clients, id_client):
             self.weigth_t_pre = parameters
             self.model.set_weights(parameters)
             self.shuffle()
-            if cid=="7": 
+            if cid==malicius: 
                 dataset=[self.x_train_m,self.y_train_m]
                 train(dataset, 3, 64, self.model, self.malicius_loss())
             else:
@@ -44,7 +44,7 @@ def client(num_clients, id_client):
             
             delta=np.array(self.model.get_weights())-np.array(parameters)
 
-            if cid=="7":
+            if cid==malicius:
                 delta=delta*(1/10)
             return delta, len(self.x_train_m), {"cid":cid}
 
@@ -131,4 +131,4 @@ if __name__ == "__main__":
     import time
     timr = random.randint(1,1)
     time.sleep(timr)
-    client(b,c)
+    client(b,c,"asd")

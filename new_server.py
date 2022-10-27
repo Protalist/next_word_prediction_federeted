@@ -75,6 +75,7 @@ def server(num_client):
 						
 						delta_krum = min(score, key=score.get)
 						return [item for item in result if item[2] == delta_krum]
+
 				def accuracy_checking(self,results,rnd):
 						ret = []
 						for r in results:
@@ -140,7 +141,8 @@ def server(num_client):
 						return
 
 					agents = results.copy()
-
+					results = {}
+					ret = []
 					for m in agents:
 						R_max =float('-inf')
 						R_min =float('inf')
@@ -151,7 +153,7 @@ def server(num_client):
 						for a in agents:
 							if a[2] == m[2]:
 								continue
-							d = distance_lp_norm(m[0],a[0])
+							d = distance_weigths_scalar(m[0],a[0])
 							if R_max_m < d:
 								R_max_m = d
 							if R_min_m > d :
@@ -163,22 +165,30 @@ def server(num_client):
 							for a2 in agents:
 								if a[2]==a2[2] or a2[2]==m[2]:
 									continue
-								d = distance_lp_norm(a2[0],a[0])
-								#print(f"distance between {r2[2]},{r[2]} = {d}")
+								d = distance_weigths_scalar(a2[0],a[0])
 								if R_max < d:
 									R_max = d
 								if R_min > d:
 									R_min = d
 
 						r=max(abs(R_max_m-R_min),abs(R_min_m-R_max))
+						results[m[2]] = r
+					
+					for r in results:
+						avarege = 0
+						for r2 in results:
+							if r == r2:
+								continue
+							avarege = avarege + results[r2]
 						k=2.5
-						if(r>k):
-							print(f"agent malicius {m[2]} detected wiyh distance {r}")
+						diff = abs(results[r]-(avarege/(len(results)-1)))
+						if(diff>k):
+							print(f"agent malicius {r} detected wiyh distance {results[r]}")
 							round = pickle.load(open(weigth_update_statistics_path, 'rb'))
-							round[str(rnd)+"-"+str(m[2])]={"agent": m[2],"distance":d}
+							round[str(rnd)+"-"+str(r)]={"agent": r,"distance":results[r]}
 							pickle.dump(round, open(weigth_update_statistics_path, 'wb'))
 						else:
-							print(f"agent {m[2]} is not malicius with distance {r}")
+							print(f"agent {r} is not malicius with distance {results[r]}")
 					return
 
 
