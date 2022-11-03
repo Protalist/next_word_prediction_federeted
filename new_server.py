@@ -6,7 +6,7 @@ import sys
 
 def server(num_client):
 		NUM_CLIENTS=num_client
-		KRUM=True
+		KRUM=False
 
 
 		class AggregateCustomMetricStrategy(fl.server.strategy.FedAvg):
@@ -84,12 +84,18 @@ def server(num_client):
 								W_g_i = self.aggregate([x for x in results if x[2] != r[2]])
 								_, dict_w_i = self.eval_fn_p(W_i)
 								_, dict_g_i = self.eval_fn_p(W_g_i)
-								if dict_w_i["val_top_3"]-dict_g_i["val_top_3"] >= -0.02:
+								trashold=-0.02
+								if rnd > 7:
+									trashold=-0.01
+								if dict_w_i["val_top_3"]-dict_g_i["val_top_3"] >= trashold:
+										round = pickle.load(open(acuracy_checking_path, 'rb'))
+										round[str(rnd)+"-"+str(r[2])]={"agent no malicius": r[2],"distance": dict_w_i["val_top_3"]-dict_g_i["val_top_3"] }
+										pickle.dump(round, open(acuracy_checking_path, 'wb'))
 										ret.append(r)
 								else:
 										print(r[2], "is malicius")
 										round = pickle.load(open(acuracy_checking_path, 'rb'))
-										round[str(rnd)+"-"+str(r[2])]={"agent": r[2],"distance": dict_w_i["val_top_3"]-dict_g_i["val_top_3"] }
+										round[str(rnd)+"-"+str(r[2])]={"agent malicius": r[2],"distance": dict_w_i["val_top_3"]-dict_g_i["val_top_3"] }
 										pickle.dump(round, open(acuracy_checking_path, 'wb'))
 
 						return ret
@@ -131,7 +137,7 @@ def server(num_client):
 						# Aggregate and print custom metric
 						accuracy_aggregated = sum(accuracies) / sum(examples)
 						top_k_grragated = sum(top_k) / sum(examples)
-						print(f"Round {rnd} aggregated  from client results loss : {loss},accuracy : {accuracy_aggregated} , top_3: {top_k_grragated} ")
+						print(f"Round {rnd}/15 aggregated  from client results loss : {loss},accuracy : {accuracy_aggregated} , top_3: {top_k_grragated} ")
 
 						# Call aggregate_evaluate from base class (FedAvg)
 						return (loss, {"accuracy":accuracy_aggregated,"top_k":top_k_grragated})
@@ -232,9 +238,9 @@ def server(num_client):
 		pickle.dump({}, open(acuracy_checking_path, 'wb'))
 
 		strategy=AggregateCustomMetricStrategy(
-						fraction_fit=0.6,  # Sample 10% of available clients for training
+						fraction_fit=0.4,  # Sample 10% of available clients for training
 						fraction_eval=0.2,  # Sample 5% of available clients for evaluation
-						min_fit_clients=5,  # Never sample less than 10 clients for training
+						min_fit_clients=3,  # Never sample less than 10 clients for training
 						min_eval_clients=2,  # Never sample less than 5 clients for evaluation
 						min_available_clients=int(NUM_CLIENTS * 0.75),  # Wait until at least 75 clients are available
 						initial_parameters=fl.common.weights_to_parameters(model.get_weights()),
@@ -242,7 +248,7 @@ def server(num_client):
 						eval_fn_p=get_eval_fn(model)
 		)
 
-		hist=fl.server.start_server(server_address ="localhost:3031",config={"num_rounds": 30}, strategy=strategy)
+		hist=fl.server.start_server(server_address ="localhost:3031",config={"num_rounds": 15}, strategy=strategy)
 
 		pickle.dump(hist, open(r'model\result_poisoned.pk1', 'wb'))
 

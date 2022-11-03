@@ -43,7 +43,7 @@ for index,value in enumerate(vocab):
 list(vocab_dict)[-50:]
 
 vocab_size=len(vocab_dict)
-vocab_size
+print("vocab size",vocab_size)
 
 def convert_int_text(prev,next,vocab_inv):
   r = ''
@@ -69,15 +69,14 @@ X = np.array(X)
 y = np.array(y)
 
 sequences = np.array(sequences)
+print("size of sequence", len(sequences))
 pickle.dump(sequences, open(r'globalVariable\sequences.pk1', 'wb'))
 
 s = pickle.load(open(r'globalVariable\sequences.pk1', 'rb'))
-print(s[:10])
 
 
 pickle.dump(vocab_dict, open(r'globalVariable\token.pk1', 'wb'))
 vocab =  pickle.load(open(r'globalVariable\token.pk1', 'rb'))
-print(vocab)
 
 
 embeddings_index = dict()

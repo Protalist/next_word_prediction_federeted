@@ -16,7 +16,7 @@ def client(num_clients, id_client, malicius):
 
     class NextWordPredictionClient(fl.client.NumPyClient):
         def __init__(self, model, x_train, y_train, x_val, y_val) -> None:
-            if(cid==malicius):
+            if(cid=="7"):
                 top_k = tf.keras.metrics.SparseTopKCategoricalAccuracy(k=3, name='top3', dtype=None)
                 optimizer=Adam(learning_rate=0.001) #tf.keras.optimizers.RMSprop()#
                 model.compile(loss=tf.keras.losses.sparse_categorical_crossentropy, optimizer=optimizer, metrics=['accuracy',top_k])
@@ -36,7 +36,7 @@ def client(num_clients, id_client, malicius):
             self.weigth_t_pre = parameters
             self.model.set_weights(parameters)
             self.shuffle()
-            if cid==malicius: 
+            if cid=="7": 
                 dataset=[self.x_train_m,self.y_train_m]
                 train(dataset, 3, 64, self.model, self.malicius_loss())
             else:
@@ -44,7 +44,7 @@ def client(num_clients, id_client, malicius):
             
             delta=np.array(self.model.get_weights())-np.array(parameters)
 
-            if cid==malicius:
+            if cid=="7":
                 delta=delta*(1/10)
             return delta, len(self.x_train_m), {"cid":cid}
 
@@ -82,7 +82,7 @@ def client(num_clients, id_client, malicius):
             return loss
 
 
-    if cid=="7":
+    if  cid=="7":
         model=next_word_model(vocab_size,lengt_sequence,weigth=None,compile=False)
     else:
         model = next_word_model(vocab_size,lengt_sequence)
@@ -98,10 +98,11 @@ def client(num_clients, id_client, malicius):
         X_f.append(i[0:lengt_sequence])
         y_f.append(i[-1])
     
-    if cid=="7":
+    if  cid=='7':
+        print("i am the poison")
         idx=len(y_f)
         for index, item in enumerate(y_f):
-            if  index>idx*0.3 and index<idx*0.4:
+            if  index>idx*0.3 and index<idx*0.7:
                 y_f[index] = 7211
     X_f = np.array(X_f)
     y_f = np.array(y_f)
