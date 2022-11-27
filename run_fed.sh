@@ -15,6 +15,7 @@ do
 done
 if [ "$2" = "" ]; then
     cmd.exe /c wt.exe -w 0 nt --title server python3 new_server.py $X $command
+    #cmd.exe /c wt.exe -w 0 nt $X $command
 else
     cmd.exe /c wt.exe -w 0 $command
 fi

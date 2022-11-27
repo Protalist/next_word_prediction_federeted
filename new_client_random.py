@@ -1,15 +1,18 @@
 from ast import If
 from re import X
 import sys
-
+from pathlib import Path
 from globalVariable.global_variable import *
 from globalVariable.model import *
 
 def client(num_clients, id_client, malicius):
     NUM_CLIENTS=num_clients
     cid=id_client
-    k=10
-
+    k=10    
+    explicit_boosting = True
+    stealty_metrics = True
+    path = Path(f"model\weigth\{cid}.h5")
+  
     vocab_dict =  pickle.load(open(r'globalVariable\token.pk1', 'rb'))
     sequences = pickle.load(open(r'globalVariable\sequences.pk1', 'rb'))
     vocab_size=len(vocab_dict)
@@ -21,6 +24,7 @@ def client(num_clients, id_client, malicius):
                 optimizer=Adam(learning_rate=0.001) #tf.keras.optimizers.RMSprop()#
                 model.compile(loss=tf.keras.losses.sparse_categorical_crossentropy, optimizer=optimizer, metrics=['accuracy',top_k])
             self.model = model
+            self.delta_model = model
             self.weigth_t_pre = None
             self.weigth = None
             self.x_train, self.y_train = x_train, y_train
@@ -29,6 +33,9 @@ def client(num_clients, id_client, malicius):
         def get_parameters(self):
             return self.model.get_weights()
 
+        def get_delta_malicius(self):
+            return self.delta_model
+
         def fit(self, parameters, config):
             """
             self.model.fit(self.x_train,self.y_train, epochs=5, batch_size=64)
@@ -36,23 +43,24 @@ def client(num_clients, id_client, malicius):
             self.weigth_t_pre = parameters
             self.model.set_weights(parameters)
             self.shuffle()
-            if cid=="7": 
+            if cid=="7" and stealty_metrics: 
                 dataset=[self.x_train_m,self.y_train_m]
                 train(dataset, 3, 64, self.model, self.malicius_loss())
             else:
                 self.model.fit(self.x_train_m,self.y_train_m, epochs=3, batch_size=64)
             
             delta=np.array(self.model.get_weights())-np.array(parameters)
-
-            if cid=="7":
-                delta=delta*(1/10)
+            self.delta_model=delta
+            if cid=="7" and explicit_boosting:
+                delta=delta*(1/8)
+            self.model.save_weights(path)
             return delta, len(self.x_train_m), {"cid":cid}
 
         def evaluate(self, parameters, config):
             self.shuffle()
             self.model.set_weights(parameters)
             loss, accuracy,top_3 = self.model.evaluate(self.x_val_m, self.y_val_m)
-            return loss, len(self.x_val), {"val_loss": loss, "val_accuracy":accuracy , "val_top_3": top_3}
+            return loss, len(self.x_val_m), {"val_loss": loss, "val_accuracy":accuracy , "val_top_3": top_3}
         
         def shuffle(self):
             X_f= np.concatenate((self.x_train , self.x_val))
@@ -82,7 +90,7 @@ def client(num_clients, id_client, malicius):
             return loss
 
 
-    if  cid=="7":
+    if  cid=="7" and stealty_metrics:
         model=next_word_model(vocab_size,lengt_sequence,weigth=None,compile=False)
     else:
         model = next_word_model(vocab_size,lengt_sequence)

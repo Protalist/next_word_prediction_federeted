@@ -7,7 +7,7 @@ import sys
 def server(num_client):
 		NUM_CLIENTS=num_client
 		KRUM=False
-
+		COOME=False
 
 		class AggregateCustomMetricStrategy(fl.server.strategy.FedAvg):
 				def __init__(
@@ -53,12 +53,16 @@ def server(num_client):
 						if KRUM:
 								weights_results = self.krum(weights_results,rnd)
 								self.current_weigth=self.aggregate(weights_results)
+						elif COOME:
+								weights_results = self.coome(weights_results,rnd)
+								self.current_weigth=self.aggregate(weights_results)
 						else:
 							self.current_weigth=self.aggregate(weights_results)
 						parameters_aggregated = fl.common.weights_to_parameters(self.current_weigth)
 
 						# Aggregate custom metrics if aggregation fn was provided
 						metrics_aggregated = {}
+
 						return parameters_aggregated, metrics_aggregated
 
 				def krum(self, result, rnd):
@@ -75,6 +79,15 @@ def server(num_client):
 						
 						delta_krum = min(score, key=score.get)
 						return [item for item in result if item[2] == delta_krum]
+
+				def coome(self, results, rnd):
+					result=[]
+					for i,_ in enumerate(results[0][0]):
+						layers=[]
+						for update in results:
+							layers.append(update[0][i])
+						result.append(np.median(np.array(layers), axis=0))
+					return [(result,results[0][1], "coome")]
 
 				def accuracy_checking(self,results,rnd):
 						ret = []

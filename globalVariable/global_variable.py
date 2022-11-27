@@ -30,7 +30,7 @@ import nltk
 import random
 from functools import reduce
 from attention import Attention
-
+from pathlib import Path
 token_path=r"model\token\tokenizer2.pkl"
 model_path=r"model\nextword_federeted.h5"
 lengt_sequence=2
