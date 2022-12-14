@@ -5,7 +5,7 @@ import sys
 from globalVariable.global_variable import *
 from globalVariable.model import *
 
-def client(num_clients, id_client, malicius):
+def client(num_clients, id_client):
     NUM_CLIENTS=num_clients
     cid=id_client
     k=10
@@ -16,12 +16,14 @@ def client(num_clients, id_client, malicius):
 
     class NextWordPredictionClient(fl.client.NumPyClient):
         def __init__(self, model, x_train, y_train, x_val, y_val) -> None:
-            if(cid=="7"):
-                top_k = tf.keras.metrics.SparseTopKCategoricalAccuracy(k=3, name='top3', dtype=None)
-                optimizer=Adam(learning_rate=0.001) #tf.keras.optimizers.RMSprop()#
-                model.compile(loss=tf.keras.losses.sparse_categorical_crossentropy, optimizer=optimizer, metrics=['accuracy',top_k])
+            # if(cid=="7"):
+            #     top_k = tf.keras.metrics.SparseTopKCategoricalAccuracy(k=3, name='top3', dtype=None)
+            #     optimizer=Adam(learning_rate=0.001) #tf.keras.optimizers.RMSprop()#
+            #     model.compile(loss=tf.keras.losses.sparse_categorical_crossentropy, optimizer=optimizer, metrics=['accuracy',top_k])
             self.model = model
-            self.weigth_t_pre = None
+            self.weigth_t_pre = model.get_weights()
+            self.delta_t_pre = np.array( self.weigth_t_pre) - np.array( self.weigth_t_pre) 
+            self.previus_round = 0
             self.weigth = None
             self.x_train, self.y_train = x_train, y_train
             self.x_val, self.y_val = x_val, y_val
@@ -33,7 +35,6 @@ def client(num_clients, id_client, malicius):
             """
             self.model.fit(self.x_train,self.y_train, epochs=5, batch_size=64)
             return self.model.get_weights(), len(self.x_train), {}"""
-            self.weigth_t_pre = parameters
             self.model.set_weights(parameters)
             self.shuffle()
             if cid=="7": 
@@ -46,6 +47,8 @@ def client(num_clients, id_client, malicius):
 
             if cid=="7":
                 delta=delta*(1/10)
+            self.weigth_t_pre = parameters
+            self.delta_t_pre = delta
             return delta, len(self.x_train_m), {"cid":cid}
 
         def evaluate(self, parameters, config):
@@ -69,23 +72,27 @@ def client(num_clients, id_client, malicius):
             self.x_val_m, self.y_val_m = X_f[split_idx:], y_f[split_idx:]
 
         def malicius_loss(self):
-            def loss(w):
-                e1 = self.evaluate(parameters=w, config=None)[0]
-                def loss2(y_true, y_pred):
-                    delta_m = np.array(w) - np.array(self.weigth_t_pre )
-                    delta = np.array(w) - delta_m
-                    e3 = distance_lp_norm(delta_m,delta)
-                    c = tf.keras.losses.SparseCategoricalCrossentropy()
-                    e2 = c(y_true, y_pred)
-                    return e2+e3
-                return loss2, e1
+            # def loss(w):
+            #     e1 = self.evaluate(parameters=w, config=None)[0]
+            #     def loss2(y_true, y_pred):
+            #         delta_m = np.array(w) - np.array(self.weigth_t_pre )
+            #         delta = np.array(w) - delta_m
+            #         e3 = distance_lp_norm(delta_m,delta)
+            #         c = tf.keras.losses.SparseCategoricalCrossentropy()
+            #         e2 = c(y_true, y_pred)
+            #         return e2+e3
+            #     return loss2, e1
+            def loss():
+                # model_pre= tf.keras.models.clone_model(self.model)
+                # model_pre.set_weights(self.weigth_t_pre)
+                return self.weigth_t_pre, self.delta_t_pre 
             return loss
 
 
-    if  cid=="7":
-        model=next_word_model(vocab_size,lengt_sequence,weigth=None,compile=False)
-    else:
-        model = next_word_model(vocab_size,lengt_sequence)
+    # if cid=="7":
+    #     model=next_word_model(vocab_size,lengt_sequence,weigth=None,compile=False)
+    # else:
+    model = next_word_model(vocab_size,lengt_sequence)
 
 
     partition_size = math.floor(len(sequences) / (NUM_CLIENTS+1))
@@ -98,11 +105,10 @@ def client(num_clients, id_client, malicius):
         X_f.append(i[0:lengt_sequence])
         y_f.append(i[-1])
     
-    if  cid=='7':
-        print("i am the poison")
+    if cid=="7":
         idx=len(y_f)
         for index, item in enumerate(y_f):
-            if  index>idx*0.3 and index<idx*0.7:
+            if  index>idx*0.3 and index<idx*0.4:
                 y_f[index] = 7211
     X_f = np.array(X_f)
     y_f = np.array(y_f)
@@ -115,7 +121,8 @@ def client(num_clients, id_client, malicius):
     x_val, y_val = X_f[split_idx:], y_f[split_idx:]
 
     client=NextWordPredictionClient( model, x_train, y_train, x_val, y_val)
-   # client.fit(model.get_weights(), None)
+    cid="7"
+    client.fit(model.get_weights(), None)
     fl.client.start_numpy_client("localhost:3031", client=NextWordPredictionClient( model, x_train, y_train, x_val, y_val))
 
 if __name__ == "__main__":
@@ -132,4 +139,4 @@ if __name__ == "__main__":
     import time
     timr = random.randint(1,1)
     time.sleep(timr)
-    client(b,c,"asd")
+    client(b,"7")
